@@ -12,7 +12,7 @@ class CourseList(ListCreateAPIView): # get(), post()
     queryset =  CourseModel.objects.all()
     serializer_class = CourseSerializer
 
-# class CourseCreate()
+# class CourseCreate() --> 
 
 class CourseDescription(RetrieveUpdateAPIView): # get(), put(), patch()
     serializer_class = CourseSerializer
