@@ -68,10 +68,16 @@ class CourseDescription(APIView): # get(), put(), patch(), delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class LessonList(ListCreateAPIView): # get()
-    serializer_class = LessonSerializer
+class LessonList(APIView): # get()
 
-    def get_queryset(self):
-        pk = self.kwargs["pk"]
-        return LessonModel.objects.filter(course=pk)
+    def get(self, request, pk):
+        # Queryset: fetch all lessons related to a specific course using course ID (pk)
+        lessons = LessonModel.objects.filter(course=pk)
+        # Convert Queryset into list of dicts
+        serializer = LessonSerializer(lessons, many = True)
+        # Return Serialized data as json
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        pass # to be done
 

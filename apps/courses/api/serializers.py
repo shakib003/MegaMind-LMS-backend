@@ -6,9 +6,12 @@ from apps.courses.models import CourseModel, LessonModel
 
 class LessonSerializer(serializers.ModelSerializer):
 
+    course = serializers.ReadOnlyField(source='course.title')
+
     class Meta:
         model = LessonModel
         fields = "__all__"
+
 
 class CourseSerializer(serializers.ModelSerializer):
 
