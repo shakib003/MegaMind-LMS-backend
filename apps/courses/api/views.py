@@ -15,6 +15,10 @@ from apps.users.api import serializers
 class CourseList(APIView):
     """
     API View for listing all courses and creating a new course.
+
+    URLs:
+        - GET  /api/v1/course/all/      : List all courses
+        - POST /api/v1/course/all/      : Create a new course
     """
 
     def get(self, request):
@@ -56,6 +60,12 @@ class CourseList(APIView):
 class CourseDescription(APIView):
     """
     API View for retrieving, updating, and deleting a specific course.
+
+    URLs:
+        - GET    /api/v1/course/<int:pk>/      : Retrieve a course
+        - PUT    /api/v1/course/<int:pk>/      : Update a course completely
+        - PATCH  /api/v1/course/<int:pk>/      : Partially update a course
+        - DELETE /api/v1/course/<int:pk>/      : Delete a course
     """
 
     def get(self, request, pk):
@@ -132,6 +142,10 @@ class LessonList(APIView):
     """
     API View to list all lessons for a specific course (GET)
     and to create a new lesson under that course (POST).
+
+    URLs:
+        - GET  /api/v1/course/<int:pk>/lesson/all/      : List all lessons for a course
+        - POST /api/v1/course/<int:pk>/lesson/all/      : Create a new lesson under a course
     """
 
     def get(self, request, pk):
@@ -179,7 +193,11 @@ class LessonList(APIView):
 class LessonDescription(APIView):
     """
     API View for retrieving, updating, and deleting a specific lesson under a specific course.
-    URL: /api/v1/course/{course_id}/lesson/{lesson_id}/
+
+    URLs:
+        - GET    /api/v1/course/<int:course_id>/lesson/<int:lesson_id>/      : Retrieve a lesson
+        - PUT    /api/v1/course/<int:course_id>/lesson/<int:lesson_id>/      : Update a lesson
+        - DELETE /api/v1/course/<int:course_id>/lesson/<int:lesson_id>/      : Delete a lesson
     """
 
     def filter_object_by(self, course_id, lesson_id):
@@ -232,3 +250,4 @@ class LessonDescription(APIView):
         lesson = self.filter_object_by(course_id, lesson_id)
         lesson.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    

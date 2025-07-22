@@ -9,4 +9,6 @@ urlpatterns = [
     path("<int:pk>/", CourseDescription.as_view(), name="course-description"),
     path("<int:pk>/lesson/all/", LessonList.as_view(), name="course_lesson-list"),
     path("<int:course_id>/lesson/<int:lesson_id>/", LessonDescription.as_view(), name="course_lesson_description")
+    path("<int:course_id>/quizze/all/", CourseQuizList.as_view(), name="course_quiz_list") #ignore
+    path("<int:course_id>/quizze/a<int:quiz_id>/", CourseQuizDescription.as_view(), name="course_quiz_list") #ignore
 ]
