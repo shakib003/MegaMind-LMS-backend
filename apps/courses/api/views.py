@@ -7,8 +7,8 @@ from rest_framework import status
 from rest_framework.generics import (ListAPIView, ListCreateAPIView,
                                      RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView)
 
-from apps.courses.models import CourseModel, LessonModel
-from apps.courses.api.serializers import CourseSerializer, LessonSerializer
+from apps.courses.models import CourseModel, LessonModel, QuizModel
+from apps.courses.api.serializers import CourseSerializer, LessonSerializer, QuizSerializer
 from apps.users.api import serializers
 
 
@@ -250,4 +250,92 @@ class LessonDescription(APIView):
         lesson = self.filter_object_by(course_id, lesson_id)
         lesson.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
+
+class CourseQuizList(APIView):
+    """
+    API View to list all quizzes for a specific course (GET)
+    and to create a new quiz under that course (POST).
+
+    URLs:
+        - GET  /api/v1/course/<int:course_id>/mini-quizze/all/      : List all quizzes for a course
+        - POST /api/v1/course/<int:course_id>/mini-quizze/all/      : Create a new quiz under a course
+    """
+
+    def get(self, request, course_id):
+        """
+        Retrieve all quizzes for a specific course.
+
+        Args:
+            course_id (int): The primary key (ID) of the course.
+
+        Returns:
+            - 200 OK: List of quizzes for the course.
+        """
+        quizzes = QuizModel.objects.filter(course_id=course_id)
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, course_id):
+        """
+        Create a new quiz under a specific course.
+
+        - Validates input data.
+        - Supports bulk creation of MCQ and short-answer questions.
+        - Links the quiz to one or more lessons.
+
+        Args:
+            course_id (int): The primary key (ID) of the course.
+
+        Returns:
+            - 201 Created: On success.
+            - 400 Bad Request: On validation error.
+        """
+        data = request.data.copy()
+        data['course'] = course_id
+        serializer = QuizSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CourseQuizDescription(APIView):
+    """
+    API View for retrieving and deleting a specific quiz under a specific course.
+
+    URLs:
+        - GET    /api/v1/course/<int:course_id>/mini-quizze/a<int:quiz_id>/      : Retrieve a quiz
+        - DELETE /api/v1/course/<int:course_id>/mini-quizze/a<int:quiz_id>/      : Delete a quiz
+    """
+
+    def get(self, request, course_id, quiz_id):
+        """
+        Retrieve a specific quiz under a specific course.
+
+        Args:
+            course_id (int): The primary key (ID) of the course.
+            quiz_id (int): The primary key (ID) of the quiz.
+
+        Returns:
+            - 200 OK: Quiz data.
+            - 404 Not Found: If quiz does not exist or does not belong to the course.
+        """
+        quiz = get_object_or_404(QuizModel, course_id=course_id, id=quiz_id)
+        serializer = QuizSerializer(quiz)
+        return Response(serializer.data)
+
+    def delete(self, request, course_id, quiz_id):
+        """
+        Delete a specific quiz under a specific course.
+
+        Args:
+            course_id (int): The primary key (ID) of the course.
+            quiz_id (int): The primary key (ID) of the quiz.
+
+        Returns:
+            - 204 No Content: On successful deletion.
+            - 404 Not Found: If quiz does not exist or does not belong to the course.
+        """
+        quiz = get_object_or_404(QuizModel, course_id=course_id, id=quiz_id)
+        quiz.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

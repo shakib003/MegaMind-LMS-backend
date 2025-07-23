@@ -1,4 +1,8 @@
+from random import choices
+from tkinter import CASCADE
 from django.db import models
+
+from apps.users.api import serializers
 
 # Create your models here.
 
@@ -33,3 +37,40 @@ class LessonModel(models.Model):
         return "Lesson " + str(self.title) + " of " + str(self.course) + " Course"
 
 
+class QuizModel(models.Model):
+    QUIZ_TYPES = [
+        ("mcq", "MCQ"),
+        ("short", "Short Answer"),
+        ("mixed", "Mixes Questions")
+    ]
+    #########
+    course = models.ForeignKey(CourseModel, on_delete=models.CASCADE, related_name="quizzes") # drop down menu
+    lessons = models.ManyToManyField(LessonModel, related_name="quizzes")
+    #########
+    title = models.CharField(max_length=150)
+    quiz_type = models.CharField(max_length=10, choices=QUIZ_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.quiz_type}) on Course-{self.course}: Lessons-{self.lessons}"
+
+class MCQQuestionModel(models.Model):
+    #########
+    quiz = models.ForeignKey(QuizModel, on_delete=models.CASCADE, related_name = "mcq_questions")
+    #########
+    text = models.CharField(max_length=150)
+
+class MCQOptionModel(models.Model):
+    #########
+    question = models.ForeignKey(MCQQuestionModel, on_delete=models.CASCADE, related_name="options")
+    #########
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+class ShortAnswerQuestionModel(models.Model):
+    #########
+    quiz = models.ForeignKey(QuizModel, on_delete=models.CASCADE, related_name = "short_questions")
+    #########
+    text = models.CharField(max_length=150)
+    # ans = models.CharField(max_length=255)
+    # correct_ans = models.CharField(max_length=255)
