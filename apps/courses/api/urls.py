@@ -3,7 +3,7 @@ from . views import (CourseList, CourseDescription,
                     LessonList, LessonDescription, CourseQuizList, CourseQuizDescription)
 
 
-# api/v1/course/...
+# api/v1/course/... 
 urlpatterns = [
     path("all/", CourseList.as_view(), name="course-list"),
     path("<int:pk>/", CourseDescription.as_view(), name="course-description"),
