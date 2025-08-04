@@ -581,3 +581,73 @@ class LessonMiniQuizList(APIView):
             {"detail": f"Deleted {deleted_count} quizzes for lesson {lesson_id} in course {course_id}."},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class LessonMiniQuizDescription(APIView):
+    """
+    API View for retrieving, updating, and deleting a specific quiz for a lesson in a course.
+    """
+
+    @extend_schema(
+        summary="Retrieve a specific quiz for a lesson in a course",
+        responses=QuizSerializer,
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH, description="ID of the course"),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH, description="ID of the lesson"),
+            OpenApiParameter("quiz_id", int, OpenApiParameter.PATH, description="ID of the quiz"),
+        ],
+    )
+    def get(self, request, course_id, lesson_id, quiz_id):
+        """
+        Retrieve a specific quiz for a lesson in a course.
+        """
+        lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
+        quiz = get_object_or_404(QuizModel, pk=quiz_id, course_id=course_id, lessons=lesson)
+        serializer = QuizSerializer(quiz)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Update a specific quiz for a lesson in a course",
+        request=QuizSerializer,
+        responses=QuizSerializer,
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH, description="ID of the course"),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH, description="ID of the lesson"),
+            OpenApiParameter("quiz_id", int, OpenApiParameter.PATH, description="ID of the quiz"),
+        ],
+    )
+    def put(self, request, course_id, lesson_id, quiz_id):
+        """
+        Update a specific quiz for a lesson in a course.
+        """
+        lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
+        quiz = get_object_or_404(QuizModel, pk=quiz_id, course_id=course_id, lessons=lesson)
+        data = request.data.copy()
+        data['course'] = course_id
+        lessons = data.get('lessons', [])
+        if str(lesson_id) not in [str(l) for l in lessons]:
+            lessons.append(lesson_id)
+        data['lessons'] = lessons
+        serializer = QuizSerializer(quiz, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete a specific quiz for a lesson in a course",
+        responses={204: None},
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH, description="ID of the course"),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH, description="ID of the lesson"),
+            OpenApiParameter("quiz_id", int, OpenApiParameter.PATH, description="ID of the quiz"),
+        ],
+    )
+    def delete(self, request, course_id, lesson_id, quiz_id):
+        """
+        Delete a specific quiz for a lesson in a course.
+        """
+        lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
+        quiz = get_object_or_404(QuizModel, pk=quiz_id, course_id=course_id, lessons=lesson)
+        quiz.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

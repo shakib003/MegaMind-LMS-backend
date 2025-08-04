@@ -1,7 +1,7 @@
 from django.urls import path
 from . views import (CourseList, CourseDescription,
                     LessonList, LessonDescription, CourseQuizList,
-                    CourseQuizDescription, LessonMiniQuizList)
+                    CourseQuizDescription, LessonMiniQuizList, LessonMiniQuizDescription)
 
 
 # api/v1/course/...
@@ -15,4 +15,5 @@ urlpatterns = [
     path("<int:course_id>/quizze/<int:quiz_id>/", CourseQuizDescription.as_view(), name="course_quiz_list"),
 
     path("<int:course_id>/lesson/<int:lesson_id>/mini-quiz/all/", LessonMiniQuizList.as_view(), name="course_quiz_list"),
+    path("<int:course_id>/lesson/<int:lesson_id>/mini-quiz/<int:quiz_id>/", LessonMiniQuizDescription.as_view(), name="course_quiz_list")
 ]
