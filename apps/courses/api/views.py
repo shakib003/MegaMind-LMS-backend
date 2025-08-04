@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import (ListAPIView, ListCreateAPIView,
                                      RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView)
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
 from apps.courses.models import CourseModel, LessonModel, QuizModel
 from apps.courses.api.serializers import CourseSerializer, LessonSerializer, QuizSerializer
@@ -20,6 +21,10 @@ class CourseList(APIView):
         - GET  /api/v1/course/all/      : List all courses
         - POST /api/v1/course/all/      : Create a new course
     """
+    @extend_schema(
+        summary="List all courses",
+        responses=CourseSerializer(many=True),
+    )
 
     def get(self, request):
         """
@@ -31,6 +36,18 @@ class CourseList(APIView):
         courses = CourseModel.objects.all()
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new course",
+        request=CourseSerializer,
+        responses=CourseSerializer,
+        examples=[
+            OpenApiExample(
+                "Course Example",
+                value={"title": "Math 101", "description": "Basic math course"}
+            )
+        ]
+    )
 
     def post(self, request):
         """
@@ -67,7 +84,11 @@ class CourseDescription(APIView):
         - PATCH  /api/v1/course/<int:pk>/      : Partially update a course
         - DELETE /api/v1/course/<int:pk>/      : Delete a course
     """
-
+    @extend_schema(
+        summary="Retrieve a course",
+        responses=CourseSerializer,
+        parameters=[OpenApiParameter("pk", int, OpenApiParameter.PATH)],
+    )
     def get(self, request, pk):
         """
         Retrieve a course by its primary key.
@@ -80,6 +101,12 @@ class CourseDescription(APIView):
         serializer = CourseSerializer(course)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Update a course completely",
+        request=CourseSerializer,
+        responses=CourseSerializer,
+        parameters=[OpenApiParameter("pk", int, OpenApiParameter.PATH)],
+    )
     def put(self, request, pk):
         """
         Update a course completely.
@@ -90,6 +117,12 @@ class CourseDescription(APIView):
         """
         return self.update(request, pk)
 
+    @extend_schema(
+        summary="Partially update a course",
+        request=CourseSerializer,
+        responses=CourseSerializer,
+        parameters=[OpenApiParameter("pk", int, OpenApiParameter.PATH)],
+    )
     def patch(self, request, pk):
         """
         Partially update a course.
@@ -125,6 +158,11 @@ class CourseDescription(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        summary="Delete a course",
+        responses={204: None},
+        parameters=[OpenApiParameter("pk", int, OpenApiParameter.PATH)],
+    )
     def delete(self, request, pk):
         """
         Delete a course by its primary key.
@@ -148,6 +186,11 @@ class LessonList(APIView):
         - POST /api/v1/course/<int:pk>/lesson/all/      : Create a new lesson under a course
     """
 
+    @extend_schema(
+        summary="List all lessons for a course",
+        responses=LessonSerializer(many=True),
+        parameters=[OpenApiParameter("pk", int, OpenApiParameter.PATH)],
+    )
     def get(self, request, pk):
         """
         Retrieve all lessons for a specific course.
@@ -162,6 +205,23 @@ class LessonList(APIView):
         serializer = LessonSerializer(lessons, many=True)
         return Response(serializer.data)
 
+
+    @extend_schema(
+        summary="Create a new lesson under a course",
+        request=LessonSerializer,
+        responses=LessonSerializer,
+        parameters=[OpenApiParameter("pk", int, OpenApiParameter.PATH)],
+        examples=[
+            OpenApiExample(
+                "Lesson Example",
+                value={
+                    "title": "Introduction",
+                    "content_type": "video",
+                    "content_url": "https://example.com/video.mp4"
+                }
+            )
+        ]
+    )
     def post(self, request, pk):
         """
         Create a new lesson under a specific course.
@@ -211,6 +271,14 @@ class LessonDescription(APIView):
         """
         return get_object_or_404(LessonModel, course_id=course_id, id=lesson_id)
 
+    @extend_schema(
+        summary="Retrieve a lesson",
+        responses=LessonSerializer,
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH),
+        ],
+    )
     def get(self, request, course_id, lesson_id):
         """
         Retrieve a specific lesson under a specific course.
@@ -223,6 +291,15 @@ class LessonDescription(APIView):
         serializer = LessonSerializer(lesson)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Update a lesson",
+        request=LessonSerializer,
+        responses=LessonSerializer,
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH),
+        ],
+    )
     def put(self, request, course_id, lesson_id):
         """
         Update a specific lesson under a specific course.
@@ -239,6 +316,14 @@ class LessonDescription(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        summary="Delete a lesson",
+        responses={204: None},
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH),
+        ],
+    )
     def delete(self, request, course_id, lesson_id):
         """
         Delete a specific lesson under a specific course.
@@ -262,6 +347,11 @@ class CourseQuizList(APIView):
         - POST /api/v1/course/<int:course_id>/mini-quizze/all/      : Create a new quiz under a course
     """
 
+    @extend_schema(
+        summary="List all quizzes for a course",
+        responses=QuizSerializer(many=True),
+        parameters=[OpenApiParameter("course_id", int, OpenApiParameter.PATH)],
+    )
     def get(self, request, course_id):
         """
         Retrieve all quizzes for a specific course.
@@ -276,6 +366,40 @@ class CourseQuizList(APIView):
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Create a new quiz under a course",
+        request=QuizSerializer,
+        responses=QuizSerializer,
+        parameters=[OpenApiParameter("course_id", int, OpenApiParameter.PATH)],
+        examples=[
+            OpenApiExample(
+                "Quiz Example",
+                value={
+                    "course": 1,
+                    "lessons": [2, 3],
+                    "title": "Sample Quiz",
+                    "quiz_type": "mcq",
+                    "mcq_questions": [
+                        {
+                            "text": "What is 2+2?",
+                            "options": [
+                                {"text": "3", "is_correct": False},
+                                {"text": "4", "is_correct": True},
+                                {"text": "5", "is_correct": False}
+                            ]
+                        }
+                    ],
+                    "short_questions": [
+                        {
+                            "text": "Name a programming language that starts with P.",
+                            "ans": "",
+                            "correct_ans": "Python"
+                        }
+                    ]
+                }
+            )
+        ]
+    )
     def post(self, request, course_id):
         """
         Create a new quiz under a specific course.
@@ -307,7 +431,14 @@ class CourseQuizDescription(APIView):
         - GET    /api/v1/course/<int:course_id>/mini-quizze/a<int:quiz_id>/      : Retrieve a quiz
         - DELETE /api/v1/course/<int:course_id>/mini-quizze/a<int:quiz_id>/      : Delete a quiz
     """
-
+    @extend_schema(
+        summary="Retrieve a quiz",
+        responses=QuizSerializer,
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH),
+            OpenApiParameter("quiz_id", int, OpenApiParameter.PATH),
+        ],
+    )
     def get(self, request, course_id, quiz_id):
         """
         Retrieve a specific quiz under a specific course.
@@ -324,6 +455,14 @@ class CourseQuizDescription(APIView):
         serializer = QuizSerializer(quiz)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Delete a quiz",
+        responses={204: None},
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH),
+            OpenApiParameter("quiz_id", int, OpenApiParameter.PATH),
+        ],
+    )
     def delete(self, request, course_id, quiz_id):
         """
         Delete a specific quiz under a specific course.
@@ -339,3 +478,106 @@ class CourseQuizDescription(APIView):
         quiz = get_object_or_404(QuizModel, course_id=course_id, id=quiz_id)
         quiz.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+class LessonMiniQuizList(APIView):
+    """
+    API View to list, create, and delete all quizzes for a specific lesson in a specific course.
+    """
+
+    @extend_schema(
+        summary="List all quizzes for a lesson in a course",
+        responses=QuizSerializer(many=True),
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH, description="ID of the course"),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH, description="ID of the lesson"),
+        ],
+    )
+    def get(self, request, course_id, lesson_id):
+        """
+        List all quizzes linked to a specific lesson in a specific course.
+        """
+        lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
+        quizzes = QuizModel.objects.filter(course_id=course_id, lessons=lesson)
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Create a new quiz for a lesson in a course",
+        request=QuizSerializer,
+        responses=QuizSerializer,
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH, description="ID of the course"),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH, description="ID of the lesson"),
+        ],
+        examples=[
+            OpenApiExample(
+                "Quiz Example",
+                value={
+                    "course": 1,
+                    "lessons": [2],  # lesson_id should be included here
+                    "title": "Lesson Mini Quiz",
+                    "quiz_type": "mcq",
+                    "mcq_questions": [
+                        {
+                            "text": "What is 2+2?",
+                            "options": [
+                                {"text": "3", "is_correct": False},
+                                {"text": "4", "is_correct": True},
+                                {"text": "5", "is_correct": False}
+                            ]
+                        }
+                    ],
+                    "short_questions": [
+                        {
+                            "text": "Name a programming language that starts with P.",
+                            "correct_ans": "Python"
+                        }
+                    ]
+                }
+            )
+        ]
+    )
+    def post(self, request, course_id, lesson_id):
+        """
+        Create a new quiz for a specific lesson in a specific course.
+        The lesson_id will be added to the lessons list if not present.
+        """
+        # Ensure the lesson exists and belongs to the course
+        lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
+
+        data = request.data.copy()
+        data['course'] = course_id
+        # Ensure the lesson is included in the lessons list
+        lessons = data.get('lessons', [])
+        if str(lesson_id) not in [str(l) for l in lessons]:
+            lessons.append(lesson_id)
+        data['lessons'] = lessons
+        serializer = QuizSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete all quizzes for a lesson in a course",
+        responses={204: None},
+        parameters=[
+            OpenApiParameter("course_id", int, OpenApiParameter.PATH, description="ID of the course"),
+            OpenApiParameter("lesson_id", int, OpenApiParameter.PATH, description="ID of the lesson"),
+        ],
+    )
+    def delete(self, request, course_id, lesson_id):
+        """
+        Delete all quizzes linked to a specific lesson in a specific course.
+        """
+        lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
+        quizzes = QuizModel.objects.filter(course_id=course_id, lessons=lesson)
+        deleted_count = quizzes.count()
+        quizzes.delete()
+        return Response(
+            {"detail": f"Deleted {deleted_count} quizzes for lesson {lesson_id} in course {course_id}."},
+            status=status.HTTP_204_NO_CONTENT
+        )

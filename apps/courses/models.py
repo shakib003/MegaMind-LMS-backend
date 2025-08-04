@@ -73,4 +73,4 @@ class ShortAnswerQuestionModel(models.Model):
     #########
     text = models.CharField(max_length=150)
     # ans = models.CharField(max_length=255)
-    # correct_ans = models.CharField(max_length=255)
+    correct_ans = models.CharField(null=True, blank=True)

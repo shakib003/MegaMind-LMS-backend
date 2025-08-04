@@ -60,7 +60,7 @@ class ShortAnswerQuestionSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = ShortAnswerQuestionModel
-        fields = ["id", "text", "ans", "correct_ans"]
+        fields = ["id", "text", "correct_ans"]
 
 class QuizSerializer(serializers.ModelSerializer):
     """
@@ -80,7 +80,7 @@ class QuizSerializer(serializers.ModelSerializer):
         """
         Create a quiz, link it to lessons, and bulk create questions.
         """
-        lessons = validated_data.pop("lesson")
+        lessons = validated_data.pop("lessons")
         mcq_questions = validated_data.pop("mcq_questions", [])
         short_questions = validated_data.pop("short_questions", [])
         quiz = QuizModel.objects.create(**validated_data)
