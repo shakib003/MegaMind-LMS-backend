@@ -2,3 +2,7 @@ Django
 djangorestframework
 psycopg2
 drf-spectacular
+python-dotenv
+openai
+PyPDF2
+requests

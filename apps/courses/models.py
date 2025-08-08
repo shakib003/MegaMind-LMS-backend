@@ -31,7 +31,8 @@ class LessonModel(models.Model):
     title = models.CharField(max_length=255)
     content_type = models.CharField(max_length=20, choices=CONTENT_TYPES)
     content_url = models.URLField(blank=True, null=True)
-    # file upload
+    pdf_file = models.FileField(upload_to='lesson_pdfs/', blank=True, null=True) # file upload
+
 
     def __str__(self):
         return "Lesson " + str(self.title) + " of " + str(self.course) + " Course"

@@ -94,7 +94,13 @@ class QuizSerializer(serializers.ModelSerializer):
             ShortAnswerQuestionModel.objects.create(quiz=quiz, **que)
         return quiz
 
+class LessonPDFQnASerializer(serializers.Serializer):
+    question = serializers.CharField()
 
+# class LessonPDFUploadSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = LessonModel
+#         fields = ['pdf_file']
 
     """
     {
