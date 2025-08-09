@@ -21,5 +21,5 @@ urlpatterns = [
         "<int:course_id>/lesson/<int:lesson_id>/pdf-qna/",
         LessonPDFQnA.as_view(),
         name="lesson_pdf_qna"
-    ),
+    )
 ]

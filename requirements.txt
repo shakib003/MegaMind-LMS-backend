@@ -6,3 +6,6 @@ python-dotenv
 openai
 PyPDF2
 requests
+faiss-cpu
+sentence-transformers
+langchain

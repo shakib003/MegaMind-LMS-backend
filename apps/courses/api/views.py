@@ -13,15 +13,17 @@ from rest_framework import serializers
 
 from apps.courses.models import CourseModel, LessonModel, QuizModel
 from apps.courses.api.serializers import (CourseSerializer, LessonSerializer,
-                                          QuizSerializer, LessonPDFQnASerializer) #, LessonPDFUploadSerializer
+                                          QuizSerializer, LessonPDFQnASerializer)
 from apps.users.api import serializers
 from rest_framework import serializers
 
 import os
 from dotenv import load_dotenv
-import PyPDF2
-import openai  # or your preferred GPT client
 import requests
+import json
+
+# Import the new search function from vector_utils
+from ..vector_utils import search_index
 
 class CourseList(APIView):
     """
@@ -663,30 +665,28 @@ class LessonMiniQuizDescription(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-load_dotenv()  # take environment variables from .env.
-openai_api_key = os.getenv("OPENAI_API_KEY")
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")
-
-def query_gpt_oss_20b(prompt):
-    api_url = "https://api-inference.huggingface.co/models/openai/gpt-oss-20b"
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+def query_generative_model(prompt):
+    """
+    Sends a prompt to the local generative model using Ollama and returns the response.
+    """
+    url = "http://localhost:11434/api/generate"
     payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 256}
+        "model": "tinyllama",
+        "prompt": prompt,
+        "stream": False
     }
-    response = requests.post(api_url, headers=headers, json=payload)
+    response = requests.post(url, json=payload)
     response.raise_for_status()
-    result = response.json()
-    # The output format may vary; adjust as needed
-    if isinstance(result, list):
-        return result[0]["generated_text"]
-    return result["generated_text"]
+    response_text = response.text
+    last_response = json.loads(response_text.strip().split('\n')[-1])
+    return last_response.get("response", "")
+
 
 class LessonPDFQnA(APIView):
     parser_classes = [JSONParser]
 
     @extend_schema(
-        summary="Ask a question about the lesson's PDF content",
+        summary="Ask a question about the lesson's PDF content using Vector Search",
         request=LessonPDFQnASerializer,
         responses={"200": serializers.CharField()},
         parameters=[
@@ -696,36 +696,33 @@ class LessonPDFQnA(APIView):
     )
     def post(self, request, course_id, lesson_id):
         """
-        Answer a question based on the content of the lesson's PDF using openai/gpt-oss-20b via Hugging Face.
+        Answers a question based on the content of the lesson's PDF using
+        FAISS vector search and a local TinyLlama model.
         """
         lesson = get_object_or_404(LessonModel, pk=lesson_id, course_id=course_id)
         if not lesson.pdf_file:
             return Response({"error": "No PDF uploaded for this lesson."}, status=400)
 
-        # Extract PDF text (limit to avoid context overflow)
-        pdf_path = lesson.pdf_file.path
-        with open(pdf_path, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
-            pdf_text = ""
-            for page in reader.pages:
-                pdf_text += page.extract_text() or ""
-        # pdf_text = pdf_text[:8000]  # Limit to first 8000 chars
-        pdf_text = pdf_text[-8000:]  # Get the last 8000 characters
-
-
-        # Get the user's question
         question = request.data.get("question")
         if not question:
             return Response({"error": "No question provided."}, status=400)
 
-        # Compose prompt
-        prompt = f"Context:\n{pdf_text}\n\nQuestion: {question}\nAnswer:"
-
-        # Call Hugging Face Inference API
+        # --- REPLACED LOGIC ---
+        # Instead of reading the PDF here, we search the pre-built index.
         try:
-            answer = query_gpt_oss_20b(prompt)
+            context = search_index(lesson_id, question)
         except Exception as e:
-            return Response({"error": str(e)}, status=500)
+            return Response({"error": f"Failed to search the vector index: {e}"}, status=500)
+        # --- END OF REPLACED LOGIC ---
+
+        # Compose the prompt with the highly relevant context
+        prompt = f"Using only the following context, please answer the question.\n\nContext:\n{context}\n\nQuestion: {question}\n\nAnswer:"
+
+        # Call the local language model to generate the final answer
+        try:
+            answer = query_generative_model(prompt)
+        except Exception as e:
+            return Response({"error": f"Failed to get a response from the AI model: {e}"}, status=500)
 
         return Response({"answer": answer})
 
