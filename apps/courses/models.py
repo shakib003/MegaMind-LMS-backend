@@ -3,16 +3,16 @@ from tkinter import CASCADE
 from django.db import models
 
 from apps.users.api import serializers
+from apps.users.models import User
 
 # Create your models here.
 
 class CourseModel(models.Model):
-    title = models.CharField(max_length=255) #unique=True
+    title = models.CharField(max_length=255)
     description = models.TextField(max_length=255)
-    # department fk
-    # instractor fk
     is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    students = models.ManyToManyField(User, related_name='enrolled_courses', blank=True) # Add this line
 
     def __str__(self):
         return self.title

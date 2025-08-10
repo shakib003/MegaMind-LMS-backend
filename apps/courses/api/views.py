@@ -25,6 +25,10 @@ import json
 # Import the new search function from vector_utils
 from ..vector_utils import search_index
 
+from rest_framework.permissions import IsAuthenticated
+from apps.users.api.permissions import IsTeacherUser, IsStudentUser, IsEnrolledStudent
+from apps.users.models import User
+
 class CourseList(APIView):
     """
     API View for listing all courses and creating a new course.
@@ -33,6 +37,9 @@ class CourseList(APIView):
         - GET  /api/v1/course/all/      : List all courses
         - POST /api/v1/course/all/      : Create a new course
     """
+
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
     @extend_schema(
         summary="List all courses",
         responses=CourseSerializer(many=True),
@@ -96,6 +103,8 @@ class CourseDescription(APIView):
         - PATCH  /api/v1/course/<int:pk>/      : Partially update a course
         - DELETE /api/v1/course/<int:pk>/      : Delete a course
     """
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
     @extend_schema(
         summary="Retrieve a course",
         responses=CourseSerializer,
@@ -198,6 +207,8 @@ class LessonList(APIView):
         - POST /api/v1/course/<int:pk>/lesson/all/      : Create a new lesson under a course
     """
 
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
     @extend_schema(
         summary="List all lessons for a course",
         responses=LessonSerializer(many=True),
@@ -271,6 +282,8 @@ class LessonDescription(APIView):
         - PUT    /api/v1/course/<int:course_id>/lesson/<int:lesson_id>/      : Update a lesson
         - DELETE /api/v1/course/<int:course_id>/lesson/<int:lesson_id>/      : Delete a lesson
     """
+
+    permission_classes = [IsAuthenticated, IsTeacherUser]
 
     def filter_object_by(self, course_id, lesson_id):
         """
@@ -359,6 +372,8 @@ class CourseQuizList(APIView):
         - POST /api/v1/course/<int:course_id>/mini-quizze/all/      : Create a new quiz under a course
     """
 
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
     @extend_schema(
         summary="List all quizzes for a course",
         responses=QuizSerializer(many=True),
@@ -443,6 +458,9 @@ class CourseQuizDescription(APIView):
         - GET    /api/v1/course/<int:course_id>/mini-quizze/a<int:quiz_id>/      : Retrieve a quiz
         - DELETE /api/v1/course/<int:course_id>/mini-quizze/a<int:quiz_id>/      : Delete a quiz
     """
+
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
     @extend_schema(
         summary="Retrieve a quiz",
         responses=QuizSerializer,
@@ -498,6 +516,8 @@ class LessonMiniQuizList(APIView):
     """
     API View to list, create, and delete all quizzes for a specific lesson in a specific course.
     """
+
+    permission_classes = [IsAuthenticated, IsTeacherUser]
 
     @extend_schema(
         summary="List all quizzes for a lesson in a course",
@@ -600,6 +620,8 @@ class LessonMiniQuizDescription(APIView):
     API View for retrieving, updating, and deleting a specific quiz for a lesson in a course.
     """
 
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
     @extend_schema(
         summary="Retrieve a specific quiz for a lesson in a course",
         responses=QuizSerializer,
@@ -683,6 +705,9 @@ def query_generative_model(prompt):
 
 
 class LessonPDFQnA(APIView):
+
+    permission_classes = [IsAuthenticated, IsTeacherUser, IsStudentUser]
+
     parser_classes = [JSONParser]
 
     @extend_schema(
@@ -727,3 +752,46 @@ class LessonPDFQnA(APIView):
         return Response({"answer": answer})
 
 
+class AddStudentToCourseView(APIView):
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
+    def post(self, request, teacher_id, course_id):
+        try:
+            student_id = request.data.get('student_id')
+            course = CourseModel.objects.get(id=course_id)
+            student = User.objects.get(student_id=student_id, role='student')
+            course.students.add(student)
+            return Response({"message": "Student added to course successfully."}, status=status.HTTP_200_OK)
+        except CourseModel.DoesNotExist:
+            return Response({"error": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+        except User.DoesNotExist:
+            return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class StudentCourseListView(generics.ListAPIView):
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated, IsStudentUser]
+
+    def get_queryset(self):
+        return self.request.user.enrolled_courses.all()
+
+
+class StudentCourseDetailView(generics.RetrieveAPIView):
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated, IsStudentUser, IsEnrolledStudent]
+    queryset = CourseModel.objects.all()
+
+
+class StudentLessonListView(generics.ListAPIView):
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsStudentUser]
+
+    def get_queryset(self):
+        course_id = self.kwargs.get('course_id')
+        return LessonModel.objects.filter(course_id=course_id)
+
+
+class StudentLessonDetailView(generics.RetrieveAPIView):
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsStudentUser]
+    queryset = LessonModel.objects.all()

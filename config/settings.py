@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "apps.users",
     "apps.courses",
+     "rest_framework_simplejwt",
 ]
 
 MIDDLEWARE = [
@@ -131,6 +132,10 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
-    # ... other settings ...
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 }
+
+AUTH_USER_MODEL = 'users.User'
